@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+# dat files and backup
+*.dat
+*.bck
