@@ -34,16 +34,16 @@ INTERFACE
     END SUBROUTINE elem_update_field
     
     ! subroutine initialize
-subroutine  initialize(Lx, Ly, nstep, T_old, T_new, L, hotstart_file, Nx, Ny, D, sim_time, nstep_start, dt, info)
+subroutine  initialize(Lx, Ly, nstep, T_old, T_new, L, inp_file, hotstart_file, Nx, Ny, D, sim_time, nstep_start, dt, info)
     
 
     implicit none
-    integer, intent(out) :: nstep, nstep_start, Nx, Ny, D
-    real, intent(out) :: Lx, Ly, sim_time, dt
+    integer, intent(inout) :: nstep, nstep_start, Nx, Ny, D
+    real, intent(inout) :: Lx, Ly, sim_time, dt
     integer :: Nx_tmp, Ny_tmp, info ! Nx, Ny from the hotstat file 
     real, dimension(:, :), allocatable :: T_old, L, T_new
     real, dimension(:,:), allocatable :: tmp_field
-    character(len=*), intent(in) :: hotstart_file
+    character(len=*) :: inp_file, hotstart_file
     logical :: file_exists
     END SUBROUTINE initialize
 
@@ -63,14 +63,14 @@ print*, 'Time: ', time
 ! NOTE: it is possibel that all the inputs are not given in the 
 ! input file and one or more are missing. If that's the case the default
 ! values that are intialized are carried forward.
-inquire(FILE=inp_file, EXIST=file_exists)
-if (file_exists) then
-    print*, 'Input file exists...Getting input from it..'
-    print*, 'WARNING! Input variables not defined in the input file will take default values.'
-    call read_input(inp_file, Nx, Ny, sim_time, D, dt)
-else
-    print*, 'Input file does not exist. Continuing with default values..'
-endif
+!inquire(FILE=inp_file, EXIST=file_exists)
+!if (file_exists) then
+!    print*, 'Input file exists...Getting input from it..'
+!    print*, 'WARNING! Input variables not defined in the input file will take default values.'
+!    call read_input(inp_file, Nx, Ny, sim_time, D, dt)
+!else
+!    print*, 'Input file does not exist. Continuing with default values..'
+!endif
 
 !allocate T_old
 !call alloc(L, T_new, T_old, Nx, Ny, info)
@@ -78,7 +78,7 @@ endif
 !print*, 'Data type of T_old: ', kind(T_old)
 
 !Initialize
-call initialize(Lx, Ly, nstep, T_old, T_new, L, hotstart_file, Nx, Ny, D, sim_time, nstep_start, dt, info)
+call initialize(Lx, Ly, nstep, T_old, T_new, L, inp_file, hotstart_file, Nx, Ny, D, sim_time, nstep_start, dt, info)
 
 ! reallocate T_old with changed size (here it remains same)
 !call alloc(L, T_new, T_old, Nx, Ny, info)

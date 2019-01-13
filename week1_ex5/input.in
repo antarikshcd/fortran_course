@@ -2,16 +2,16 @@
 #--------------------------------
 
 # Number of grid points in x
-Nx = 61
+Nx = 21
 
 # Number of gridpoints in y
-Ny = 61
+Ny = 21
 
 # Total simulation time
-sim_time = 0.125
+sim_time = 0.11
 
 # Diffusion constant
-D = 1
+D = 90
 
 # time step: delta t
-#dt = 0.01
+dt = 0.01

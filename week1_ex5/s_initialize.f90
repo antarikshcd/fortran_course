@@ -1,16 +1,39 @@
 !intitalization subroutine
-subroutine  initialize(Lx, Ly, nstep, T_old, T_new, L, hotstart_file, Nx, Ny, D, sim_time, nstep_start, dt, info)
+subroutine  initialize(Lx, Ly, nstep, T_old, T_new, L, inp_file, hotstart_file, Nx, Ny, D, sim_time, nstep_start, dt, info)
     use mod_alloc,ONLY:alloc=>salloc
 
     implicit none
-    integer, intent(out) :: nstep, nstep_start, Nx, Ny, D
-    real, intent(out) :: Lx, Ly, sim_time, dt
+    integer, intent(inout) :: nstep, nstep_start, Nx, Ny, D
+    real, intent(inout) :: Lx, Ly, sim_time, dt
     integer :: Nx_tmp, Ny_tmp, info ! Nx, Ny from the hotstat file 
     real, dimension(:, :), allocatable :: T_old, L, T_new
     real, dimension(:,:), allocatable :: tmp_field
-    character(len=*), intent(in) :: hotstart_file
+    character(len=*) :: inp_file, hotstart_file
     logical :: file_exists
     
+    ! inquire if file exists. If it does call the read_input subroutine
+    ! NOTE: it is possibel that all the inputs are not given in the 
+    ! input file and one or more are missing. If that's the case the default
+    ! values that are intialized are carried forward.
+    inp_file = 'input.in'
+    hotstart_file = 'hotstart.bck'
+    Nx=21
+    Ny=21
+    D=1
+    ! initialize constants
+    Lx = 1.0 ! length in x
+    Ly = 1.0 ! length in y
+    nstep=200 ! number of time steps   
+    sim_time = 0.125 
+
+    inquire(FILE=inp_file, EXIST=file_exists)
+    if (file_exists) then
+        print*, 'Input file exists...Getting input from it..'
+        print*, 'WARNING! Input variables not defined in the input file will take default values.'
+        call read_input(inp_file, Nx, Ny, sim_time, D, dt)
+    else
+        print*, 'Input file does not exist. Continuing with default values..'
+    endif
 
     INQUIRE(FILE=hotstart_file, EXIST=file_exists)
     if (file_exists) then
@@ -43,10 +66,7 @@ subroutine  initialize(Lx, Ly, nstep, T_old, T_new, L, hotstart_file, Nx, Ny, D,
         L(:,:) = 0.0 !laplacian array
         nstep_start = 1
     endif
-    ! initialize constants
-    Lx = 1.0 ! length in x
-    Ly = 1.0 ! length in y
-    nstep=200 ! number of time steps
+
 
    
 
