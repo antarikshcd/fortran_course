@@ -3,50 +3,67 @@
 PROGRAM diffusion
 
 USE mod_diff ! contains all the declarations
-USE mod_alloc, ONLY:alloc=>salloc! contains allocation subroutine
+USE mod_alloc! contains allocation subroutine
 ! define interface
 INTERFACE
 
     SUBROUTINE file_out(Nx, Ny, dx, dy, T_new, tstep_count)
+        USE mod_diff, ONLY:MK! contains allocation subroutine
         IMPLICIT none
+        !integer :: MK
         INTEGER, INTENT(IN) :: Nx, Ny
         INTEGER, OPTIONAL :: tstep_count
         REAL, INTENT(IN) :: dx, dy
-        REAL, DIMENSION(Nx, Ny) :: T_new
+        REAL(MK), DIMENSION(:, :) :: T_new
         CHARACTER(LEN=20) :: filename
     END SUBROUTINE file_out
     
     ! subroutine diagnostic
     SUBROUTINE diagnostic(k, dt, nstep, T_new)
+         USE mod_diff, ONLY:MK! contains allocation subroutine
         IMPLICIT none
+        !integer :: MK
         INTEGER, INTENT(IN) :: k, nstep
         REAL, INTENT(IN) :: dt
         REAL:: time, min_T  
-        REAL, DIMENSION(:, :), INTENT(IN) :: T_new !assumed shape array
+        REAL(MK), DIMENSION(:, :), INTENT(IN) :: T_new !assumed shape array
         LOGICAL :: first = .TRUE. ! saves the value for opening file
     END SUBROUTINE diagnostic
 
     ! subroutine update field
     ELEMENTAL SUBROUTINE elem_update_field(T_old, T_new)
+        USE mod_diff, ONLY:MK! contains allocation subroutine
         IMPLICIT none
-        REAL, INTENT(IN) :: T_new
-        REAL, INTENT(OUT) :: T_old
+        !integer :: MK
+        REAL(MK), INTENT(IN) :: T_new
+        REAL(MK), INTENT(OUT) :: T_old
     END SUBROUTINE elem_update_field
     
     ! subroutine initialize
     SUBROUTINE  initialize(Lx, Ly, nstep, T_old, T_new, L, inp_file, hotstart_file, Nx, Ny, D, sim_time, nstep_start, dt, info)
         
-    
+        USE mod_diff, ONLY:MK! contains allocation subroutine
         implicit none
+        !integer :: MK
         integer, intent(inout) :: nstep, nstep_start, Nx, Ny, D
         real, intent(inout) :: Lx, Ly, sim_time, dt
         integer :: Nx_tmp, Ny_tmp, info ! Nx, Ny from the hotstat file 
-        real, dimension(:, :), allocatable :: T_old, L, T_new
-        real, dimension(:,:), allocatable :: tmp_field
+        real(MK), dimension(:, :), allocatable :: T_old, L, T_new
+        real(MK), dimension(:,:), allocatable :: tmp_field
         character(len=*) :: inp_file, hotstart_file
         logical :: file_exists
     END SUBROUTINE initialize
-
+    !subroutine to dave restart file
+    subroutine save_restart(hotstart_file, Nx, Ny, D, sim_time, dt, itstep, T_old)
+     USE mod_diff, ONLY:MK! contains allocation subroutine
+    implicit none
+    !integer :: MK
+    character(len=*) :: hotstart_file
+    integer :: Nx, Ny, D, itstep
+    real :: sim_time, dt
+    real(MK), dimension (:,:) :: T_old
+end subroutine save_restart
+   
 END INTERFACE
 
 ! STORE THE system clock count rate
@@ -99,17 +116,7 @@ sq_dy = dy**2
 DO k=nstep_start,nstep
     
     ! Saving a hotstart file for T_old at each time-step
-    OPEN(15, FILE='hotstart.bck', FORM='unformatted', STATUS='replace')
-    WRITE(15) Nx
-    WRITE(15) Ny
-    WRITE(15) D
-    WRITE(15) sim_time
-    WRITE(15) dt    
-    WRITE(15) k !store the time step
-    WRITE(15) T_old ! store the array
-    CLOSE(15)
-
-
+    call save_restart(hotstart_file, Nx, Ny, D, sim_time, dt, k, T_old)
 
     ! condition to exit the do loop if tot time exceeds sim_time
     tot_time = k*dt 
@@ -152,8 +159,8 @@ DO k=nstep_start,nstep
     call file_out(Nx, Ny, dx, dy, T_new, k)
 
     !update T_old
-    !call elem_update_field(T_old, T_new)
-    T_old = T_new
+    call elem_update_field(T_old, T_new)
+    
 ENDDO  
 
 !PRINT*, 'T = ',T_new

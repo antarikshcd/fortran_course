@@ -1,8 +1,9 @@
 elemental subroutine elem_update_field(T_old, T_new)
-    
+     USE mod_diff, ONLY:MK! contains allocation subroutine
     implicit none
-    real, intent(in) :: T_new
-    real, intent(out) :: T_old
+    !integer :: MK
+    real(MK), intent(in) :: T_new
+    real(MK), intent(out) :: T_old
 
     T_old = T_new
     

@@ -1,11 +1,13 @@
 ! file output subroutine
 subroutine file_out(Nx, Ny, dx, dy, T_new, tstep_count)
+    USE mod_diff, ONLY:MK! contains allocation subroutine
     
     implicit none
+    !integer :: MK
     integer, intent(in) :: Nx, Ny
     integer, optional :: tstep_count
     real, intent(in) :: dx, dy
-    real, dimension(Nx, Ny) :: T_new
+    real(MK), dimension(:, :) :: T_new
     character(len=20) :: filename
     integer :: i, j, real_len
 

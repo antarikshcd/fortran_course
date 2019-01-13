@@ -1,7 +1,9 @@
 ! read input file for the diffusion problem: Nx,Ny,D,nstep,dt,sim_time
 
 subroutine read_input(filename, Nx, Ny, sim_time, D, dt)
+    USE mod_diff, ONLY:MK! contains allocation subroutine
    implicit none
+   !integer :: MK
    character(len=256) :: buffer, keyword, cvalue, filename
    integer :: i, freq, flen, slen, vlen, pos_eq, ilen, Nx, Ny, D, ios
    real :: sim_time, dt

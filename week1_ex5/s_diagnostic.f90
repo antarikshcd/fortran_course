@@ -1,9 +1,12 @@
 subroutine diagnostic(k, dt, nstep, T_new)
+
+    USE mod_diff, ONLY:MK! contains allocation subroutine
     implicit none
+    !integer :: MK
     integer, intent(in) :: k, nstep
     real, intent(in) :: dt
     real:: time, min_T  
-    real, dimension(:, :), intent(in) :: T_new !assumed shape array
+    real(MK), dimension(:, :), intent(in) :: T_new !assumed shape array
     logical :: first = .TRUE. ! saves the value for opening file
     
     ! calculate time

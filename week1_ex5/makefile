@@ -11,7 +11,8 @@ objs = m_data.o\
        s_updatefield.o\
        s_elem_updatefield.o\
        s_diagnostic.o\
-       s_read_input.o
+       s_read_input.o\
+       s_restart.o
 
 # linking: the target depends on the objects
 # if objects are newer than the arget they are re-linked	
@@ -32,7 +33,9 @@ s_elem_updatefield.o: s_elem_updatefield.f90
 s_diagnostic.o: s_diagnostic.f90
 	f95 -ffree-form -c s_diagnostic.f90
 s_read_input.o: s_read_input.f90
-	f95 -ffree-form -c s_read_input.f90	
+	f95 -ffree-form -c s_read_input.f90
+s_restart.o: s_restart.f90
+	f95 -ffree-form -c s_restart.f90			
 m_alloc.o: m_alloc.f90 m_data.o
 	f95 -ffree-form -c m_alloc.f90
 m_data.o: m_data.f90
