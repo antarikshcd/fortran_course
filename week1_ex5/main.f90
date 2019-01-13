@@ -34,17 +34,17 @@ INTERFACE
     END SUBROUTINE elem_update_field
     
     ! subroutine initialize
-subroutine  initialize(Lx, Ly, nstep, T_old, T_new, L, inp_file, hotstart_file, Nx, Ny, D, sim_time, nstep_start, dt, info)
+    SUBROUTINE  initialize(Lx, Ly, nstep, T_old, T_new, L, inp_file, hotstart_file, Nx, Ny, D, sim_time, nstep_start, dt, info)
+        
     
-
-    implicit none
-    integer, intent(inout) :: nstep, nstep_start, Nx, Ny, D
-    real, intent(inout) :: Lx, Ly, sim_time, dt
-    integer :: Nx_tmp, Ny_tmp, info ! Nx, Ny from the hotstat file 
-    real, dimension(:, :), allocatable :: T_old, L, T_new
-    real, dimension(:,:), allocatable :: tmp_field
-    character(len=*) :: inp_file, hotstart_file
-    logical :: file_exists
+        implicit none
+        integer, intent(inout) :: nstep, nstep_start, Nx, Ny, D
+        real, intent(inout) :: Lx, Ly, sim_time, dt
+        integer :: Nx_tmp, Ny_tmp, info ! Nx, Ny from the hotstat file 
+        real, dimension(:, :), allocatable :: T_old, L, T_new
+        real, dimension(:,:), allocatable :: tmp_field
+        character(len=*) :: inp_file, hotstart_file
+        logical :: file_exists
     END SUBROUTINE initialize
 
 END INTERFACE
@@ -58,33 +58,15 @@ print*, 'Simulation start.....'
 print*, 'Date: ', date
 print*, 'Time: ', time
 
-
-! inquire if file exists. If it does call the read_input subroutine
-! NOTE: it is possibel that all the inputs are not given in the 
-! input file and one or more are missing. If that's the case the default
-! values that are intialized are carried forward.
-!inquire(FILE=inp_file, EXIST=file_exists)
-!if (file_exists) then
-!    print*, 'Input file exists...Getting input from it..'
-!    print*, 'WARNING! Input variables not defined in the input file will take default values.'
-!    call read_input(inp_file, Nx, Ny, sim_time, D, dt)
-!else
-!    print*, 'Input file does not exist. Continuing with default values..'
-!endif
-
-!allocate T_old
-!call alloc(L, T_new, T_old, Nx, Ny, info)
-!print*, 'check allocate stat: ', info
-!print*, 'Data type of T_old: ', kind(T_old)
-
 !Initialize
-call initialize(Lx, Ly, nstep, T_old, T_new, L, inp_file, hotstart_file, Nx, Ny, D, sim_time, nstep_start, dt, info)
+call initialize(Lx, Ly, nstep, T_old, T_new, L, inp_file, hotstart_file, &
+                Nx, Ny, D, sim_time, nstep_start, dt, info)
 
 ! reallocate T_old with changed size (here it remains same)
 !call alloc(L, T_new, T_old, Nx, Ny, info)
 
 ! set the dt, dx, dy
-dt = sim_time/real(nstep) ! time step
+
 dx = Lx/REAL(Nx - 1) ! discrete length in x
 dy = Ly/REAL(Ny - 1) ! discrete length in y
 
@@ -92,17 +74,11 @@ dy = Ly/REAL(Ny - 1) ! discrete length in y
 ! calculate dt_limit
 dt_limit = MIN(dx,dy)**2/REAL(4*D)
 !print*,'dt_limit= ', dt_limit !DEBUG
-IF ((dt-dt_limit) > 1.0e-5) THEN
+IF (dt.GE.dt_limit) THEN
     !print*, 'dt-dt_limit=',(dt-dt_limit) !DEBUG
     print*, 'WARNING! Fourier limit violated. Ensuring compliance by reducing time-step....'
     dt = dt_limit - 0.001*dt_limit !reduce by 0.1% from the dt limit
     nstep = int(sim_time/dt)
- 
-
-ELSEIF (file_exists .AND. (dt-dt_limit) <= 1.0e-5) THEN
-    ! when dt is given in input and it differs from the default and fourier limit is not violated
-    nstep = int(sim_time/dt)
-    !print*, 'Nsteps=', nstep ! DEBUG
 
 ENDIF        
 

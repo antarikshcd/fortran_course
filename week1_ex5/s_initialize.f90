@@ -25,14 +25,19 @@ subroutine  initialize(Lx, Ly, nstep, T_old, T_new, L, inp_file, hotstart_file, 
     Ly = 1.0 ! length in y
     nstep=200 ! number of time steps   
     sim_time = 0.125 
+    dt = sim_time/real(nstep) ! time step
 
     inquire(FILE=inp_file, EXIST=file_exists)
     if (file_exists) then
         print*, 'Input file exists...Getting input from it..'
         print*, 'WARNING! Input variables not defined in the input file will take default values.'
         call read_input(inp_file, Nx, Ny, sim_time, D, dt)
+        ! if dt is changed then new nstep is calculated else the  
+        ! nstep is based on old dt ie nstep=200
+        nstep = int(sim_time/dt) 
     else
         print*, 'Input file does not exist. Continuing with default values..'
+        
     endif
 
     INQUIRE(FILE=hotstart_file, EXIST=file_exists)
