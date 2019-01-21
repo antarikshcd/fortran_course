@@ -3,67 +3,50 @@
 PROGRAM diffusion
 
 USE mod_diff ! contains all the declarations
-USE mod_alloc! contains allocation subroutine
+USE mod_alloc, ONLY:alloc=>salloc! contains allocation subroutine
 ! define interface
 INTERFACE
 
     SUBROUTINE file_out(Nx, Ny, dx, dy, T_new, tstep_count)
-        USE mod_diff, ONLY:MK! contains allocation subroutine
         IMPLICIT none
-        !integer :: MK
         INTEGER, INTENT(IN) :: Nx, Ny
         INTEGER, OPTIONAL :: tstep_count
         REAL, INTENT(IN) :: dx, dy
-        REAL(MK), DIMENSION(:, :) :: T_new
+        REAL, DIMENSION(Nx, Ny) :: T_new
         CHARACTER(LEN=20) :: filename
     END SUBROUTINE file_out
     
     ! subroutine diagnostic
     SUBROUTINE diagnostic(k, dt, nstep, T_new)
-         USE mod_diff, ONLY:MK! contains allocation subroutine
         IMPLICIT none
-        !integer :: MK
         INTEGER, INTENT(IN) :: k, nstep
         REAL, INTENT(IN) :: dt
         REAL:: time, min_T  
-        REAL(MK), DIMENSION(:, :), INTENT(IN) :: T_new !assumed shape array
+        REAL, DIMENSION(:, :), INTENT(IN) :: T_new !assumed shape array
         LOGICAL :: first = .TRUE. ! saves the value for opening file
     END SUBROUTINE diagnostic
 
     ! subroutine update field
     ELEMENTAL SUBROUTINE elem_update_field(T_old, T_new)
-        USE mod_diff, ONLY:MK! contains allocation subroutine
         IMPLICIT none
-        !integer :: MK
-        REAL(MK), INTENT(IN) :: T_new
-        REAL(MK), INTENT(OUT) :: T_old
+        REAL, INTENT(IN) :: T_new
+        REAL, INTENT(OUT) :: T_old
     END SUBROUTINE elem_update_field
     
     ! subroutine initialize
-    SUBROUTINE  initialize(Lx, Ly, nstep, T_old, T_new, L, inp_file, hotstart_file, Nx, Ny, D, sim_time, nstep_start, dt, info)
-        
-        USE mod_diff, ONLY:MK! contains allocation subroutine
-        implicit none
-        !integer :: MK
-        integer, intent(inout) :: nstep, nstep_start, Nx, Ny, D
-        real, intent(inout) :: Lx, Ly, sim_time, dt
-        integer :: Nx_tmp, Ny_tmp, info ! Nx, Ny from the hotstat file 
-        real(MK), dimension(:, :), allocatable :: T_old, L, T_new
-        real(MK), dimension(:,:), allocatable :: tmp_field
-        character(len=*) :: inp_file, hotstart_file
-        logical :: file_exists
-    END SUBROUTINE initialize
-    !subroutine to dave restart file
-    subroutine save_restart(hotstart_file, Nx, Ny, D, sim_time, dt, itstep, T_old)
-     USE mod_diff, ONLY:MK! contains allocation subroutine
+subroutine  initialize(Lx, Ly, nstep, T_old, T_new, L, hotstart_file, Nx, Ny, D, sim_time, nstep_start, dt, info)
+    
+
     implicit none
-    !integer :: MK
-    character(len=*) :: hotstart_file
-    integer :: Nx, Ny, D, itstep
-    real :: sim_time, dt
-    real(MK), dimension (:,:) :: T_old
-end subroutine save_restart
-   
+    integer, intent(out) :: nstep, nstep_start, Nx, Ny, D
+    real, intent(out) :: Lx, Ly, sim_time, dt
+    integer :: Nx_tmp, Ny_tmp, info ! Nx, Ny from the hotstat file 
+    real, dimension(:, :), allocatable :: T_old, L, T_new
+    real, dimension(:,:), allocatable :: tmp_field
+    character(len=*), intent(in) :: hotstart_file
+    logical :: file_exists
+    END SUBROUTINE initialize
+
 END INTERFACE
 
 ! STORE THE system clock count rate
@@ -75,15 +58,33 @@ print*, 'Simulation start.....'
 print*, 'Date: ', date
 print*, 'Time: ', time
 
+
+! inquire if file exists. If it does call the read_input subroutine
+! NOTE: it is possibel that all the inputs are not given in the 
+! input file and one or more are missing. If that's the case the default
+! values that are intialized are carried forward.
+inquire(FILE=inp_file, EXIST=file_exists)
+if (file_exists) then
+    print*, 'Input file exists...Getting input from it..'
+    print*, 'WARNING! Input variables not defined in the input file will take default values.'
+    call read_input(inp_file, Nx, Ny, sim_time, D, dt)
+else
+    print*, 'Input file does not exist. Continuing with default values..'
+endif
+
+!allocate T_old
+!call alloc(L, T_new, T_old, Nx, Ny, info)
+!print*, 'check allocate stat: ', info
+!print*, 'Data type of T_old: ', kind(T_old)
+
 !Initialize
-call initialize(Lx, Ly, nstep, T_old, T_new, L, inp_file, hotstart_file, &
-                Nx, Ny, D, sim_time, nstep_start, dt, info)
+call initialize(Lx, Ly, nstep, T_old, T_new, L, hotstart_file, Nx, Ny, D, sim_time, nstep_start, dt, info)
 
 ! reallocate T_old with changed size (here it remains same)
 !call alloc(L, T_new, T_old, Nx, Ny, info)
 
 ! set the dt, dx, dy
-
+dt = sim_time/real(nstep) ! time step
 dx = Lx/REAL(Nx - 1) ! discrete length in x
 dy = Ly/REAL(Ny - 1) ! discrete length in y
 
@@ -91,11 +92,17 @@ dy = Ly/REAL(Ny - 1) ! discrete length in y
 ! calculate dt_limit
 dt_limit = MIN(dx,dy)**2/REAL(4*D)
 !print*,'dt_limit= ', dt_limit !DEBUG
-IF (dt.GE.dt_limit) THEN
+IF ((dt-dt_limit) > 1.0e-5) THEN
     !print*, 'dt-dt_limit=',(dt-dt_limit) !DEBUG
     print*, 'WARNING! Fourier limit violated. Ensuring compliance by reducing time-step....'
     dt = dt_limit - 0.001*dt_limit !reduce by 0.1% from the dt limit
     nstep = int(sim_time/dt)
+ 
+
+ELSEIF (file_exists .AND. (dt-dt_limit) <= 1.0e-5) THEN
+    ! when dt is given in input and it differs from the default and fourier limit is not violated
+    nstep = int(sim_time/dt)
+    !print*, 'Nsteps=', nstep ! DEBUG
 
 ENDIF        
 
@@ -116,7 +123,17 @@ sq_dy = dy**2
 DO k=nstep_start,nstep
     
     ! Saving a hotstart file for T_old at each time-step
-    call save_restart(hotstart_file, Nx, Ny, D, sim_time, dt, k, T_old)
+    OPEN(15, FILE='hotstart.bck', FORM='unformatted', STATUS='replace')
+    WRITE(15) Nx
+    WRITE(15) Ny
+    WRITE(15) D
+    WRITE(15) sim_time
+    WRITE(15) dt    
+    WRITE(15) k !store the time step
+    WRITE(15) T_old ! store the array
+    CLOSE(15)
+
+
 
     ! condition to exit the do loop if tot time exceeds sim_time
     tot_time = k*dt 
@@ -159,8 +176,8 @@ DO k=nstep_start,nstep
     call file_out(Nx, Ny, dx, dy, T_new, k)
 
     !update T_old
-    call elem_update_field(T_old, T_new)
-    
+    !call elem_update_field(T_old, T_new)
+    T_old = T_new
 ENDDO  
 
 !PRINT*, 'T = ',T_new
